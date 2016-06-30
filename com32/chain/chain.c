@@ -143,6 +143,39 @@ ok:
     return drive;
 }
 
+/*
+ * Search for a specific drive whic have a partition with a given GPT label.
+ * Return drive and iterator at proper position.
+ */
+static int find_disk_by_pname(const char *label, struct part_iter **_boot_part)
+{
+    struct part_iter *iter = NULL;
+    struct disk_info diskinfo;
+    int drive;
+
+    for (drive = 0x80; drive < 0x80 + fixed_cnt; drive++) {
+	if (disk_get_params(drive, &diskinfo))
+	    continue;		/* Drive doesn't exist */
+	if (!(iter = pi_begin(&diskinfo, opt.piflags)))
+	    continue;
+	/* Check for a matching GPT partition label */
+	if (iter->type == typegpt)
+	    while (!pi_next(iter)) {
+		if (!strncmp(label, iter->gpt.part_label, strlen(label))) {
+		    // We don't care about the actual partition that matched
+		    pi_del(&iter);
+		    // Let's return the disk itself instead
+		    iter = pi_begin(&diskinfo, opt.piflags);
+		    goto ok;
+		}
+	    }
+    }
+    drive = -1;
+ok:
+    *_boot_part = iter;
+    return drive;
+}
+
 static void do_boot(struct data_area *data, int ndata)
 {
     struct syslinux_memmap *mmap;
@@ -300,6 +333,15 @@ int find_dp(struct part_iter **_iter)
 	}
 	if (find_by_label(opt.drivename + 6, &iter) < 0) {
 	    error("Unable to find requested GPT partition by label.");
+	    goto bail;
+	}
+    } else if (!strncmp(opt.drivename, "diskbypname", 11)) {
+	if (!opt.drivename[12]) {
+	    error("No partition name specified.");
+	    goto bail;
+	}
+	if (find_disk_by_pname(opt.drivename + 12, &iter) < 0) {
+	    error("Unable to find requested GPT partition by partition name.");
 	    goto bail;
 	}
     } else if ((opt.drivename[0] == 'h' || opt.drivename[0] == 'f') &&

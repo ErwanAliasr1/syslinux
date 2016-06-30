@@ -107,6 +107,7 @@ static void usage(void)
 "  direct partition selection:",
 "        chain.c32 guid=<guid> [options]",
 "        chain.c32 label=<label> [options]",
+"        chain.c32 diskbypname=<label> [options]",
 "        chain.c32 fs [options]",
 "",
 "You can use ':' instead of '=' and ' ' instead of ','.",
@@ -396,6 +397,8 @@ int opt_parse_args(int argc, char *argv[])
 		   || !strncmp(argv[i], "guid=", 5)
 		   || !strncmp(argv[i], "label:", 6)
 		   || !strncmp(argv[i], "label=", 6)
+		   || !strncmp(argv[i], "diskbypname:", 12)
+		   || !strncmp(argv[i], "diskbypname=", 12)
 		   || !strcmp(argv[i], "boot")
 		   || !strncmp(argv[i], "boot,", 5)
 		   || !strcmp(argv[i], "fs")) {
